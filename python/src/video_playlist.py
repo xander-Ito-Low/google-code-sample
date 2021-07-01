@@ -7,11 +7,13 @@ class Playlist:
     """A class used to represent a Playlist."""
     def __init__(self,playlist_title:str):
         """Playlist constructor."""
+        
         self.playlist_title = playlist_title
         self.videos_in_queue = {}
 
     def addToQueue(self,title,video_id,tags):
         """Add a video to the playlist queue."""
+        
         self.videos_in_queue[video_id] = Video(title,video_id,tags)
     
     def displayQueue(self):
