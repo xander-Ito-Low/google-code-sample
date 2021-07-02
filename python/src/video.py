@@ -32,6 +32,27 @@ class Video:
     def tags(self) -> Sequence[str]:
         """Returns the list of tags of a video."""
         return self._tags
+
+    @property
+    def flag(self) -> bool:
+        """Returns the flag of a video."""
+        return self._video_flag
+
+    @property
+    def reason(self) -> str:
+        """Returns the reason that a video was flagged."""
+        return self._video_reason
+
+    def setFlag(self,flag):
+        "This sets the flag for a video"
+        self._video_flag = flag
+
+    def setReason(self,reason):
+        "This sets the reason as to why a video was flagged"
+        self._video_reason = reason
+
+
+
     
 
         

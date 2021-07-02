@@ -16,7 +16,36 @@ class VideoPlayer:
         self._currentlyPauseId = ""
         self.createdPlaylists = {}
 
+    def message_of_video_title(self,action,video_id):
+        """This shows if a video title is playing, paused or has ceased playing"""
+        
+        print(action + " video:"+ f" {self._video_library._videos[video_id].title}")
+
+    def check_flag(self,video_id):
+        """This checks to see if a video in the video library is flagged"""
+        if self._video_library._videos[video_id].flag == True:
+            return True
+        
+        else:
+            return False
+    
+    def print_flagged_message(self,video_id,action):
+        """This command prints the flag message of a video"""
+        print ("Cannot " + action + ": Video is currently flagged"+ f" (reason: {self._video_library._videos[video_id].reason})")
+
+    def flag_procedure(self,video_id,action):
+        """This method calls a flag procedure that deals with flagged videos and their messages"""
+        
+        if self.check_flag(video_id):
+                self.print_flagged_message(video_id,action)
+                return True
+        else:
+            return False
+
+    
     def number_of_videos(self):
+        """This command prints how many videos are present in the library"""
+
         num_videos = len(self._videolist)
         print(f"{num_videos} videos in the library")
 
@@ -34,7 +63,15 @@ class VideoPlayer:
             title = video.title
             id = video.video_id 
             tags = video.tags
-            print(" "+f"{title} ({id}) [{' '.join(tags)}]")
+            flag = video.flag
+
+            if flag == False:
+                print(" "+f"{title} ({id}) [{' '.join(tags)}]")
+
+            else:
+                flag_reason = video.reason
+                print(" "+f"{title} ({id}) [{' '.join(tags)}] - FLAGGED"+f" (reason: {flag_reason})")
+
 
     def play_video(self, video_id):
         """Plays the respective video.
@@ -44,10 +81,13 @@ class VideoPlayer:
         """
         if video_id in self._video_library._videos:
 
+            if self.flag_procedure(video_id,"play video"):
+                return
+
             if self._currentlyPlayId != "":
-                print("Stopping video: "+ f"{self._video_library._videos[self._currentlyPlayId].title}")
+               self.message_of_video_title("Stopping",self._currentlyPlayId)
             
-            print("Playing video: "+ f"{self._video_library._videos[video_id].title}")
+            self.message_of_video_title("Playing",video_id)
             self._currentlyPlayId =  video_id
             self._currentlyPauseId = ""
         
@@ -58,7 +98,7 @@ class VideoPlayer:
         """Stops the current video."""
 
         if self._currentlyPlayId != "":
-             print("Stopping video: "+ f"{self._video_library._videos[self._currentlyPlayId].title}")
+             self.message_of_video_title("Stopping",self._currentlyPlayId)
              self._currentlyPlayId = ""
              self._currentlyPauseId = ""
             
@@ -67,12 +107,17 @@ class VideoPlayer:
 
     def play_random_video(self):
         """Plays a random video from the video library."""
+        random_video_list = self._video_library.get_all_random_videos()
+        
+        if len(random_video_list) == 0:
+            print("No videos available")
+            return
 
         if self._currentlyPlayId != "":
-            print("Stopping video: "+ f"{self._video_library._videos[self._currentlyPlayId].title}")
+            self.message_of_video_title("Stopping",self._currentlyPlayId)
 
-        self._currentlyPlayId = (random.choice(self._videolist)).video_id
-        print("Playing video: "+ f"{self._video_library._videos[self._currentlyPlayId].title}")
+        self._currentlyPlayId = (random.choice(random_video_list)).video_id
+        self.message_of_video_title("Playing",self._currentlyPlayId)
 
     def pause_video(self):
         """Pauses the current video."""
@@ -91,7 +136,7 @@ class VideoPlayer:
         """Resumes playing the current video."""
         if self._currentlyPauseId != "":
             self._currentlyPauseId = ""
-            print("Continuing video: "+f"{self._video_library._videos[self._currentlyPlayId].title}")
+            self.message_of_video_title("Continuing",self._currentlyPlayId)
         
         elif self._currentlyPauseId == "" and self._currentlyPlayId != "":
             print("Cannot continue video: Video is not paused")
@@ -148,16 +193,24 @@ class VideoPlayer:
                  print("Cannot add video to " +playlist_name+": Video does not exist")
             
             else:
+                error_message = "add video to "+playlist_name
                 title = self._video_library._videos[video_id].title
                 tags = self._video_library._videos[video_id].tags
 
                 selectedPlaylist = self.createdPlaylists[playlist_name.lower()]
                 
                 if video_id not in selectedPlaylist.videos_in_queue:
+                    
+                    if self.flag_procedure(video_id,error_message):
+                        return
+                    
                     selectedPlaylist.addToQueue(title,video_id,tags)
                     print("Added video to " +playlist_name+": "+title)
                 
                 else:
+                    if self.flag_procedure(video_id,error_message):
+                        return
+                    
                     print("Cannot add video to " + playlist_name+": Video already added")
 
         else:
@@ -255,7 +308,7 @@ class VideoPlayer:
         results = []
         for video in self._videolist: 
             title = video.title
-            if search_term.lower() in title.lower():
+            if search_term.lower() in title.lower() and not video.flag:
                 results.append(video)
         
         if len(results) != 0:
@@ -293,7 +346,7 @@ class VideoPlayer:
         results = []
         for video in self._videolist:
             tagsAsString = ' '.join(video.tags)
-            if video_tag.lower() in tagsAsString.lower() and "#" in video_tag:
+            if video_tag.lower() in tagsAsString.lower() and "#" in video_tag and not video.flag:
                 results.append(video)
         
         if len(results) != 0:
@@ -322,6 +375,17 @@ class VideoPlayer:
             print("No search results for " + video_tag)
 
 
+    def flag_video_in_playlist(self,video_id,flag,reason):
+        """Flag the respective video in the playlist"""
+        
+        for playlist in self.createdPlaylists:
+            
+            if video_id not in self.createdPlaylists[playlist].videos_in_queue:
+                continue
+
+            else:
+                self.createdPlaylists[playlist].flag_certain_video(video_id,flag,reason)
+    
     def flag_video(self, video_id, flag_reason=""):
         """Mark a video as flagged.
 
@@ -329,12 +393,53 @@ class VideoPlayer:
             video_id: The video_id to be flagged.
             flag_reason: Reason for flagging the video.
         """
-        print("flag_video needs implementation")
+        
+        if video_id in self._video_library._videos:
+            if  self._video_library._videos[video_id].flag == False:
+                title = self._video_library._videos[video_id].title
 
+                if video_id == self._currentlyPlayId:
+                    self.stop_video()
+                
+                if flag_reason == "":
+                    flag_reason = "Not supplied"
+                    print("Successfully flagged video: " +title+ f" (reason: {flag_reason})")
+                
+                else:
+                    print("Successfully flagged video: " +title+ f" (reason: {flag_reason})")
+
+                self._video_library.remove_random_video(video_id)
+                self._video_library._videos[video_id].setFlag(True)
+                self._video_library._videos[video_id].setReason(flag_reason)
+                self.flag_video_in_playlist(video_id,True,flag_reason)
+
+                """Call function to loop through all playlists to locate if the video is in the playlist"""
+            
+            else:
+                 print("Cannot flag video: Video is already flagged")
+        else:
+            print("Cannot flag video: Video does not exist")
+         
     def allow_video(self, video_id):
         """Removes a flag from a video.
 
         Args:
             video_id: The video_id to be allowed again.
         """
-        print("allow_video needs implementation")
+        if video_id in self._video_library._videos:
+            if  self._video_library._videos[video_id].flag == True:
+                title = self._video_library._videos[video_id].title
+
+                print("Successfully removed flag from video: " +title)
+
+                self._video_library.add_random_video(video_id)
+                self._video_library._videos[video_id].setFlag(False)
+                self._video_library._videos[video_id].setReason("")
+                self.flag_video_in_playlist(video_id,False,"")
+
+                """Call function to loop through all playlists to locate if the video is in the playlist"""
+            
+            else:
+                    print("Cannot remove flag from video: Video is not flagged")
+        else:
+            print("Cannot remove flag from video: Video does not exist")

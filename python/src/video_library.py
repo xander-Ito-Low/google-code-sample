@@ -1,5 +1,6 @@
 """A video library class."""
 
+import copy
 from .video import Video
 from pathlib import Path
 import csv
@@ -31,9 +32,24 @@ class VideoLibrary:
             # sort list by `name` in the natural order
             self._videos = {k: v for k, v in sorted(self._videos.items(), key=lambda item: item[0])}
 
+            #A deep copy of all of the avaliable videos
+            self.randomvideos = copy.deepcopy(self._videos)
+
     def get_all_videos(self):
         """Returns all available video information from the video library."""
         return list(self._videos.values())
+
+    def get_all_random_videos(self):
+        """Returns all playable videos."""
+        return list(self.randomvideos.values())
+    
+    def remove_random_video(self,video_id):
+         "removes a random video from the dictionary"
+         self.randomvideos.pop(video_id)
+    
+    def add_random_video(self,video_id):
+         "add a random video from the dictionary"
+         self.randomvideos[video_id] = self._videos[video_id]
 
     def get_video(self, video_id):
         """Returns the video object (title, url, tags) from the video library.
