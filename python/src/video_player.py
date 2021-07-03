@@ -16,6 +16,34 @@ class VideoPlayer:
         self._currentlyPauseId = ""
         self.createdPlaylists = {}
 
+    def show_results(self,results,term):
+        """This method displays all of the videos that correspond to the relavent search term"""
+        
+        if len(results) != 0:
+            print("Here are the results for "+term+":")
+         #remember to start the count at 1 to display it
+            count = 1
+            for result in results:
+                title = result.title
+                id = result.video_id 
+                tags = result.tags
+                print(" "+f"{count}) {title} ({id}) [{' '.join(tags)}]")
+                count = count+1
+            
+            print("Would you like to play any of the above? If yes, specify the number of the video.")
+            print("If your answer is not a valid number, we will assume it's a no.")
+
+            response = input()
+            if not response.isnumeric() or int(response)-1>=len(results):
+                return
+            
+            else:
+                self.play_video(results[int(response)-1].video_id)
+        
+        else:
+            print("No search results for " + term)
+
+
     def message_of_video_title(self,action,video_id):
         """This shows if a video title is playing, paused or has ceased playing"""
         
@@ -23,7 +51,7 @@ class VideoPlayer:
 
     def check_flag(self,video_id):
         """This checks to see if a video in the video library is flagged"""
-        if self._video_library._videos[video_id].flag == True:
+        if self._video_library.get_video(video_id).flag == True:
             return True
         
         else:
@@ -124,10 +152,10 @@ class VideoPlayer:
         if self._currentlyPlayId != "" and self._currentlyPauseId == "":
             title = self._video_library._videos[self._currentlyPlayId].title
             print("Pausing video: "+ f"{title}")
-            self._currentlyPauseId = self._video_library._videos[self._currentlyPlayId].video_id
+            self._currentlyPauseId = self._video_library.get_video(self._currentlyPlayId).video_id
         
         elif self._currentlyPauseId != "":
-             print("Video already paused: "+ f"{self._video_library._videos[self._currentlyPauseId].title}")
+             print("Video already paused: "+ f"{self._video_library.get_video(self._currentlyPauseId).title}")
         
         else:
             print("Cannot pause video: No video is currently playing")
@@ -151,9 +179,9 @@ class VideoPlayer:
             print("No video is currently playing")
             return
         
-        title = self._video_library._videos[self._currentlyPlayId].title
-        id = self._video_library._videos[self._currentlyPlayId].video_id
-        tags = self._video_library._videos[self._currentlyPlayId].tags
+        title = self._video_library.get_video(self._currentlyPlayId).title
+        id = self._video_library.get_video(self._currentlyPlayId).video_id
+        tags = self._video_library.get_video(self._currentlyPlayId).tags
         
         if self._currentlyPlayId != "" and self._currentlyPauseId == "":
             print("Currently playing: "+f"{title} ({id}) [{' '.join(tags)}]")
@@ -171,9 +199,6 @@ class VideoPlayer:
 
         if playlist_name.lower() not in self.createdPlaylists:
             self.createdPlaylists[playlist_name.lower()] = Playlist(playlist_name)
-            
-             # sort dictionary by `key` in the natural order
-            self.createdPlaylists = {k: v for k, v in sorted(self.createdPlaylists.items(), key=lambda item: item[0])}
 
             print("Successfully created new playlist: "+ playlist_name)
         
@@ -223,6 +248,10 @@ class VideoPlayer:
         
         if isFull:
             print("Showing all playlists:")
+
+             # sort dictionary by `key` in the natural order
+            self.createdPlaylists = {k: v for k, v in sorted(self.createdPlaylists.items(), key=lambda item: item[0])}
+
             for playlist in self.createdPlaylists:
                 print(f" {self.createdPlaylists[playlist].playlist_title}")
         else:
@@ -311,30 +340,7 @@ class VideoPlayer:
             if search_term.lower() in title.lower() and not video.flag:
                 results.append(video)
         
-        if len(results) != 0:
-            print("Here are the results for "+search_term+":")
-
-            #remember to start the count at 1 to display it
-            count = 1
-            for result in results:
-                title = result.title
-                id = result.video_id 
-                tags = result.tags
-                print(" "+f"{count}) {title} ({id}) [{' '.join(tags)}]")
-                count = count+1
-            
-            print("Would you like to play any of the above? If yes, specify the number of the video.")
-            print("If your answer is not a valid number, we will assume it's a no.")
-
-            response = input()
-            if not response.isnumeric() or int(response)-1>=len(results):
-                return
-            
-            else:
-                self.play_video(results[int(response)-1].video_id)
-
-        else:
-            print("No search results for " + search_term)
+        self.show_results(results,search_term)
 
     def search_videos_tag(self, video_tag):
         """Display all videos whose tags contains the provided tag.
@@ -349,31 +355,7 @@ class VideoPlayer:
             if video_tag.lower() in tagsAsString.lower() and "#" in video_tag and not video.flag:
                 results.append(video)
         
-        if len(results) != 0:
-            print("Here are the results for "+video_tag+":")
-
-            #remember to start the count at 1 to display it
-            count = 1
-            for result in results:
-                title = result.title
-                id = result.video_id 
-                tags = result.tags
-                print(" "+f"{count}) {title} ({id}) [{' '.join(tags)}]")
-                count = count+1
-            
-            print("Would you like to play any of the above? If yes, specify the number of the video.")
-            print("If your answer is not a valid number, we will assume it's a no.")
-
-            response = input()
-            if not response.isnumeric() or int(response)-1>=len(results):
-                return
-            
-            else:
-                self.play_video(results[int(response)-1].video_id)
-        
-        else:
-            print("No search results for " + video_tag)
-
+        self.show_results(results,video_tag)
 
     def flag_video_in_playlist(self,video_id,flag,reason):
         """Flag the respective video in the playlist"""
@@ -409,8 +391,8 @@ class VideoPlayer:
                     print("Successfully flagged video: " +title+ f" (reason: {flag_reason})")
 
                 self._video_library.remove_random_video(video_id)
-                self._video_library._videos[video_id].setFlag(True)
-                self._video_library._videos[video_id].setReason(flag_reason)
+                self._video_library.get_video(video_id).setFlag(True)
+                self._video_library.get_video(video_id).setReason(flag_reason)
                 self.flag_video_in_playlist(video_id,True,flag_reason)
 
                 """Call function to loop through all playlists to locate if the video is in the playlist"""
@@ -433,8 +415,8 @@ class VideoPlayer:
                 print("Successfully removed flag from video: " +title)
 
                 self._video_library.add_random_video(video_id)
-                self._video_library._videos[video_id].setFlag(False)
-                self._video_library._videos[video_id].setReason("")
+                self._video_library.get_video(video_id).setFlag(False)
+                self._video_library.get_video(video_id).setReason("")
                 self.flag_video_in_playlist(video_id,False,"")
 
                 """Call function to loop through all playlists to locate if the video is in the playlist"""
