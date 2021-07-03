@@ -1,5 +1,3 @@
-"""A video player class."""
-
 from src.video import Video
 from src.video_playlist import Playlist
 from .video_library import VideoLibrary
